@@ -1,0 +1,5 @@
+colorama==0.4.6
+lizard==1.17.13
+mando==0.7.1
+Pygments==2.18.0
+six==1.17.0
