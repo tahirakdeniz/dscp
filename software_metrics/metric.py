@@ -7,6 +7,7 @@ import os
 import glob
 import time
 import sys
+import pandas as pd
 
 def calculate_complexity_metrics(file_path):
     # Analyze the file using lizard
@@ -396,7 +397,7 @@ def calculate_metrics(file_path):
         **custom_metrics
     }
     
-def dict_to_csv(file_name, metrics_dict, output_csv="results/metrics.csv"):
+def dict_to_csv(file_path, metrics_dict, output_csv="results/metrics.csv"):
     # Create the directory if it does not exist
     os.makedirs(os.path.dirname(output_csv), exist_ok=True)
     
@@ -407,11 +408,12 @@ def dict_to_csv(file_name, metrics_dict, output_csv="results/metrics.csv"):
         
         # Write the header only if the file does not exist
         if not file_exists:
-            headers = ['file_name'] + list(metrics_dict.keys())
+            headers = ['file_path', 'file_name'] + list(metrics_dict.keys())
             writer.writerow(headers)
         
         # Write the data
-        row = [file_name] + list(metrics_dict.values())
+        file_name = os.path.basename(file_path)
+        row = [file_path, file_name] + list(metrics_dict.values())
         writer.writerow(row)
 
 def process_files(file_paths):
@@ -427,11 +429,20 @@ if __name__ == "__main__":
     
     print("Starting analysis...")
     
-    if len(sys.argv) != 2:
-        print("Usage: python main.py <directory_path>")
+    if len(sys.argv) != 4:
+        print("Usage: python main.py <directory_path> <csv_train_file> <csv_test_file>")
         sys.exit(1)
     
     file_path = sys.argv[1]
-    file_path_list = glob.glob(f'{file_path}/*.c')
+    
+    csv_train_file = sys.argv[2]
+    csv_test_file = sys.argv[3]
+
+    df1 = pd.read_csv(csv_train_file)
+    df2 = pd.read_csv(csv_test_file)
+    
+    file_path_list = list()
+    file_path_list.extend(f'{file_path}/' +df1['file_name'])
+    file_path_list.extend(f'{file_path}/' +df2['file_name'])
     
     process_files(file_path_list)
