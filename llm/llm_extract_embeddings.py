@@ -5,12 +5,19 @@ from transformers import AutoTokenizer, AutoModel, AutoModelForSeq2SeqLM
 import numpy as np
 import warnings
 import sys
+import logging
+import datetime
 
 # Suppress TensorFlow warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress TensorFlow INFO and WARNING messages
 
 # Suppress specific PyTorch UserWarning about Flash Attention
 warnings.filterwarnings("ignore", message=".*Torch was not compiled with flash attention.*")
+
+current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+logfilename = f"extract_embeddings_{current_date}.log"
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename=logfilename)
+logger = logging.getLogger(__name__)
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Generate embeddings using CodeBERT and CodeT5.")
@@ -31,7 +38,7 @@ def load_model(model_name, model_type, device):
         model.eval()
         return tokenizer, model
     except Exception as e:
-        print(f"Error loading model {model_name}: {e}")
+        logger.error(f"Error loading model {model_name}: {e}")
         return None, None
 
 def split_code(code, tokenizer, max_length=512, stride=50):
@@ -86,20 +93,20 @@ def generate_embedding(tokenizer, model, code, device, model_type):
             return aggregated_embedding
     except RuntimeError as e:
         if 'out of memory' in str(e):
-            print("CUDA out of memory. Switching to CPU.")
+            logger.error("CUDA out of memory. Switching to CPU.")
             torch.cuda.empty_cache()
             return None
         else:
             raise e
     except ValueError as ve:
-        print(f"ValueError: {ve}")
+        logger.error(f"ValueError: {ve}")
         return None
 
 def process_file(file_path, output_dir):
     # Define subfolders for each model
     models = {
         'CodeBERT': {'name': 'microsoft/codebert-base', 'type': 'AutoModel'}, # By Tahir
-        'CodeT5': {'name': 'Salesforce/codet5-base', 'type': 'AutoModelForSeq2SeqLM'} # By Enes
+        # 'CodeT5': {'name': 'Salesforce/codet5-base', 'type': 'AutoModelForSeq2SeqLM'} # By Enes
     }
 
     # Create subfolders
@@ -112,22 +119,22 @@ def process_file(file_path, output_dir):
         with open(file_path, 'r', encoding='utf-8') as f:
             code = f.read()
     except Exception as e:
-        print(f"Error reading file {file_path}: {e}")
+        logger.error(f"Error reading file {file_path}: {e}")
         return  # Changed from sys.exit(1) to continue processing other files
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    print(f"Initial device: {device}")
+    logger.info(f"Initial device: {device}")
 
     for model_label, model_info in models.items():
         model_name = model_info['name']
         model_type = model_info['type']
-        print(f"\nProcessing with {model_label} ({model_name})")
+        logger.info(f"\nProcessing with {model_label} ({model_name})")
 
         current_device = device
         tokenizer, model = load_model(model_name, model_type, current_device)
 
         if tokenizer is None or model is None:
-            print(f"Skipping {model_label} due to loading issues.")
+            logger.error(f"Skipping {model_label} due to loading issues.")
             continue
 
         embedding = generate_embedding(tokenizer, model, code, current_device, model_type)
@@ -135,14 +142,14 @@ def process_file(file_path, output_dir):
         # If embedding is None, it means OOM occurred on GPU. Retry on CPU.
         if embedding is None and device == 'cuda':
             current_device = 'cpu'
-            print(f"Retrying {model_label} on CPU.")
+            logger.info(f"Retrying {model_label} on CPU.")
             tokenizer, model = load_model(model_name, model_type, current_device)
             if tokenizer is None or model is None:
-                print(f"Skipping {model_label} due to loading issues on CPU.")
+                logger.error(f"Skipping {model_label} due to loading issues on CPU.")
                 continue
             embedding = generate_embedding(tokenizer, model, code, current_device, model_type)
             if embedding is None:
-                print(f"Failed to generate embedding for {model_label} on CPU.")
+                logger.error(f"Failed to generate embedding for {model_label} on CPU.")
                 continue
 
         # Define the embedding file path
@@ -153,10 +160,10 @@ def process_file(file_path, output_dir):
         # Save the embedding
         try:
             np.save(embedding_file, embedding)
-            print(f"Saved {model_label} embedding to {embedding_file}")
-            print(f"Embedding shape: {embedding.shape}")
+            logger.info(f"Saved {model_label} embedding to {embedding_file}")
+            logger.info(f"Embedding shape: {embedding.shape}")
         except Exception as e:
-            print(f"Error saving embedding for {model_label}: {e}")
+            logger.error(f"Error saving embedding for {model_label}: {e}")
 
         # Free up GPU memory if used
         if current_device == 'cuda':
@@ -169,7 +176,7 @@ def main():
     file_path = args.file_path
 
     if not os.path.isfile(file_path):
-        print(f"File {file_path} does not exist.")
+        logger.error(f"File {file_path} does not exist.")
         sys.exit(1)
 
     # Determine output directory

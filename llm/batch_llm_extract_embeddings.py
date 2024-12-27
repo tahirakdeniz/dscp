@@ -4,6 +4,13 @@ import os
 import sys
 from tqdm import tqdm
 from llm_extract_embeddings import process_file
+import logging
+import datetime
+
+current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+logfilename = f"batch_extract_embeddings_{current_date}.log"
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename=logfilename)
+logger = logging.getLogger(__name__)
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Batch generate embeddings using CodeBERT and CodeT5 based on a CSV file.")
@@ -22,10 +29,10 @@ def read_csv(csv_file_path):
             rows = list(reader)
         return rows
     except FileNotFoundError:
-        print(f"CSV file {csv_file_path} not found.")
+        logger.error(f"CSV file {csv_file_path} not found.")
         sys.exit(1)
     except Exception as e:
-        print(f"Error reading CSV file {csv_file_path}: {e}")
+        logger.error(f"Error reading CSV file {csv_file_path}: {e}")
         sys.exit(1)
 
 def main():
@@ -36,7 +43,7 @@ def main():
 
     # Verify that source_folder exists
     if not os.path.isdir(source_folder):
-        print(f"Source folder {source_folder} does not exist.")
+        logger.error(f"Source folder {source_folder} does not exist.")
         sys.exit(1)
 
     # Create output_folder if it doesn't exist
@@ -45,13 +52,13 @@ def main():
     # Read the CSV file
     rows = read_csv(csv_file)
     total_files = len(rows)
-    print(f"Total files to process: {total_files}")
+    logger.info(f"Total files to process: {total_files}")
 
     # Process each file listed in the CSV
     for row in tqdm(rows, desc="Processing files", unit="file"):
         file_name = row.get('file_name')
         if not file_name:
-            print("Skipping a row with missing 'file_name'.")
+            logger.warning("Skipping a row with missing 'file_name'.")
             continue
 
         # Construct the full path to the source file
@@ -59,17 +66,17 @@ def main():
 
         # Check if the source file exists
         if not os.path.isfile(source_file_path):
-            print(f"Source file {source_file_path} does not exist. Skipping.")
+            logger.warning(f"Source file {source_file_path} does not exist. Skipping.")
             continue
 
         # Call the process_file function
         try:
             process_file(source_file_path, output_folder)
         except Exception as e:
-            print(f"Error processing file {source_file_path}: {e}")
+            logger.error(f"Error processing file {source_file_path}: {e}")
             continue
 
-    print("Batch processing completed.")
+    logger.info("Batch processing completed.")
 
 if __name__ == "__main__":
     main()
