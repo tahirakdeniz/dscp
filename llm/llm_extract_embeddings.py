@@ -98,8 +98,8 @@ def generate_embedding(tokenizer, model, code, device, model_type):
 def process_file(file_path, output_dir):
     # Define subfolders for each model
     models = {
-        'CodeBERT': {'name': 'microsoft/codebert-base', 'type': 'AutoModel'},
-        'CodeT5': {'name': 'Salesforce/codet5-base', 'type': 'AutoModelForSeq2SeqLM'}
+        'CodeBERT': {'name': 'microsoft/codebert-base', 'type': 'AutoModel'}, # By Tahir
+        'CodeT5': {'name': 'Salesforce/codet5-base', 'type': 'AutoModelForSeq2SeqLM'} # By Enes
     }
 
     # Create subfolders
