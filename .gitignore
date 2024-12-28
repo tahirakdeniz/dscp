@@ -7,3 +7,5 @@ results/**
 .DS_Store
 software_metrics/output.csv
 extracted_embeddings/
+combined_data/
+*.log
