@@ -24,7 +24,7 @@ def load_dataset(npy_path, train_csv, test_csv):
     # Load training data
     for index, row in train_df.iterrows():
         try:
-            file_path = os.path.join(npy_path, row['file_name']+"_combined.npy")
+            file_path = os.path.join(npy_path, row['file_name']+"_embedding.npy")
             data = np.load(file_path)
             train_data.append(data)
             train_labels.append(row['vulnerability'])
@@ -34,7 +34,7 @@ def load_dataset(npy_path, train_csv, test_csv):
     # Load testing data
     for index, row in test_df.iterrows():
         try:
-            file_path = os.path.join(npy_path, row['file_name']+"_combined.npy")
+            file_path = os.path.join(npy_path, row['file_name']+"_embedding.npy")
             data = np.load(file_path)
             test_data.append(data)
             test_labels.append(row['vulnerability'])
@@ -108,7 +108,7 @@ if "__main__" == __name__:
     train_csv = args.train_csv
     test_csv = args.test_csv
     
-    (train_data, train_labels), (test_data, test_labels) = load_dataset(npy_path, train_csv, test_csv)
+    (train_data, train_labels), (test_data, test_labels) = load_dataset(combined_path, train_csv, test_csv)
     
     train_xgboost(train_data, train_labels, test_data, test_labels)
     

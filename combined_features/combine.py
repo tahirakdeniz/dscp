@@ -40,31 +40,6 @@ def combine_features(metrics, embedding):
         for code_metrics, llm_embedding in zip(metrics, embedding)
     ])
 
-# def train_vulnerability_detector(combined_features,y_labels):
-#     """
-#     Trains XGBoost model with combined features.
-    
-#     Parameters:
-#     X_metrics: np.array - Array of code metrics for all samples
-#     X_embeddings: np.array - Array of LLM embeddings for all samples
-#     y_labels: np.array - Binary labels (1 for vulnerable, 0 for safe)
-    
-#     Returns:
-#     xgb.XGBClassifier - Trained model
-#     """
-    
-#     # Initialize and train XGBoost
-#     model = xgb.XGBClassifier(
-#         n_estimators=100,
-#         max_depth=6,
-#         learning_rate=0.1,
-#         objective='binary:logistic',
-#         eval_metric='auc'
-#     )
-    
-#     model.fit(combined_features, y_labels)
-#     return model
-
 def combine_features_for_files(csv_path, embed_dir,output_dir):
     # Configure logging
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
